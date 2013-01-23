@@ -21,7 +21,6 @@
 #include <dynamo/include.hpp>
 #include <magnet/xmlwriter.hpp>
 #include <magnet/xmlreader.hpp>
-#include <boost/foreach.hpp>
 
 namespace dynamo {
   namespace detail {
@@ -36,8 +35,7 @@ namespace dynamo {
     {
       OPContactMapPairHash pairhash;
       ::std::size_t hash(0);
-      typedef ::std::pair< ::std::size_t, ::std::size_t> Entry;
-      BOOST_FOREACH(const Entry& entry, map)
+      for (const auto& entry : map)
 	hash = pairhash(std::make_pair(pairhash(std::make_pair(hash, entry.first)), entry.second));
       return hash;
     }
@@ -58,9 +56,9 @@ namespace dynamo {
     _weight = 0;
     _total_weight = 0;
   
-    BOOST_FOREACH(const shared_ptr<Interaction>& interaction, Sim->interactions)
+    for (const auto& interaction : Sim->interactions)
       {
-	shared_ptr<ISingleCapture> capture_interaction = std::tr1::dynamic_pointer_cast<ISingleCapture>(interaction);
+	shared_ptr<ISingleCapture> capture_interaction = std::dynamic_pointer_cast<ISingleCapture>(interaction);
 	typedef std::pair<size_t, size_t> key;
 	if (capture_interaction)
 	  _current_map.insert(capture_interaction->getMap().begin(), capture_interaction->getMap().end());
@@ -95,7 +93,7 @@ namespace dynamo {
 
     if ((event.getType() == STEP_IN) || (event.getType() == STEP_OUT))
       {
-	shared_ptr<ISingleCapture> capture_interaction = std::tr1::dynamic_pointer_cast<ISingleCapture>(Sim->interactions[event.getInteractionID()]);
+	shared_ptr<ISingleCapture> capture_interaction = std::dynamic_pointer_cast<ISingleCapture>(Sim->interactions[event.getInteractionID()]);
 	if (capture_interaction)
 	  {
 	    //Cache the old map data, and flush the entry
@@ -117,7 +115,7 @@ namespace dynamo {
 	    //Check if the new map is already in the list.  If the
 	    //current map is not, insert it, and initialise its ID
 	    MapKey newkey(_current_map.begin(), _current_map.end());
-	    std::tr1::unordered_map<MapKey, MapData,  detail::OPContactMapHash>::iterator _map_it
+	    std::unordered_map<MapKey, MapData,  detail::OPContactMapHash>::iterator _map_it
 	      = _collected_maps.find(newkey);
 	    if (_map_it == _collected_maps.end())
 	      _map_it = _collected_maps.insert(std::pair<const MapKey, MapData>(newkey, MapData(Sim->getOutputPlugin<OPMisc>()->getConfigurationalU(), _next_map_id++))).first;
@@ -175,8 +173,7 @@ namespace dynamo {
       	<< magnet::xml::attr("Count") << _collected_maps.size();
       ;
 
-    typedef std::pair<MapKey, MapData> MapDataType;
-    BOOST_FOREACH(const MapDataType& entry, _collected_maps)
+    for(const auto& entry : _collected_maps)
       {
 	XML << magnet::xml::tag("Map")
 	    << magnet::xml::attr("ID") << entry.second._id
@@ -184,7 +181,7 @@ namespace dynamo {
 	    << magnet::xml::attr("Weight") << entry.second._weight / _total_weight;
 	
 	typedef std::pair<size_t, size_t> IDPair;
-	BOOST_FOREACH(const IDPair& ids, entry.first)
+	for (const auto& ids : entry.first)
 	  XML << magnet::xml::tag("Contact")
 	      << magnet::xml::attr("ID1") << ids.first
 	      << magnet::xml::attr("ID2") << ids.second
@@ -197,9 +194,7 @@ namespace dynamo {
 	<< magnet::xml::tag("Links")
       	<< magnet::xml::attr("Count") << _map_links.size();
 
-
-    typedef std::pair<const std::pair<size_t, size_t>, size_t> EdgeDataType;
-    BOOST_FOREACH(const EdgeDataType& entry, _map_links)
+    for (const auto& entry : _map_links)
       XML << magnet::xml::tag("Link")
 	  << magnet::xml::attr("Source") << entry.first.first
 	  << magnet::xml::attr("Target") << entry.first.second

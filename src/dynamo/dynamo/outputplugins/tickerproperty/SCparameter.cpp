@@ -20,7 +20,6 @@
 #include <dynamo/units/units.hpp>
 #include <dynamo/BC/BC.hpp>
 #include <boost/math/special_functions/pow.hpp>  
-#include <boost/foreach.hpp>
 #include <magnet/xmlwriter.hpp>
 #include <fstream>
 #include <cmath>
@@ -67,7 +66,7 @@ namespace dynamo {
       {
 	std::complex<double> sum(0, 0);
 
-	BOOST_FOREACH(const Particle& part, Sim->particles)
+	for (const Particle& part : Sim->particles)
 	  {
 	    double psum(0);
 	  

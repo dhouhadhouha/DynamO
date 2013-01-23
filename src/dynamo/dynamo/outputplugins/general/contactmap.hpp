@@ -19,7 +19,7 @@
 #include <dynamo/outputplugins/outputplugin.hpp>
 #include <set>
 #include <vector>
-#include <tr1/unordered_map>
+#include <unordered_map>
 
 namespace dynamo {
   namespace detail {
@@ -80,7 +80,7 @@ namespace dynamo {
       the system. This sorting is implicitly carried out by the
       _current_map.
      */
-    std::tr1::unordered_map<MapKey, MapData,  detail::OPContactMapHash> _collected_maps;
-    std::tr1::unordered_map<std::pair<size_t, size_t>, size_t, detail::OPContactMapPairHash> _map_links;
+    std::unordered_map<MapKey, MapData,  detail::OPContactMapHash> _collected_maps;
+    std::unordered_map<std::pair<size_t, size_t>, size_t, detail::OPContactMapPairHash> _map_links;
   };
 }

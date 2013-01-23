@@ -21,7 +21,6 @@
 #include <dynamo/simulation.hpp>
 #include <magnet/xmlwriter.hpp>
 #include <magnet/xmlreader.hpp>
-#include <boost/foreach.hpp>
 
 namespace dynamo {
   void 
@@ -70,7 +69,7 @@ namespace dynamo {
   {
     XML << magnet::xml::tag("CaptureMap");
 
-    BOOST_FOREACH(const cMapKey& IDs, captureMap)
+    for (const cMapKey& IDs : captureMap)
       XML << magnet::xml::tag("Pair")
 	  << magnet::xml::attr("ID1") << IDs.first
 	  << magnet::xml::attr("ID2") << IDs.second
@@ -112,7 +111,7 @@ namespace dynamo {
 
     typedef std::pair<const cMapKey, int> locpair;
 
-    BOOST_FOREACH(const locpair& IDs, captureMap)
+    for (const locpair& IDs : captureMap)
       XML << magnet::xml::tag("Pair")
 	  << magnet::xml::attr("ID1") << IDs.first.first
 	  << magnet::xml::attr("ID2") << IDs.first.second
@@ -126,7 +125,7 @@ namespace dynamo {
   ISingleCapture::validateState(bool textoutput, size_t max_reports) const
   {
     size_t retval(0);
-    BOOST_FOREACH(const cMapKey& IDs, captureMap)
+    for (const cMapKey& IDs : captureMap)
       {
 	const Particle& p1(Sim->particles[IDs.first]);
 	const Particle& p2(Sim->particles[IDs.second]);
@@ -149,7 +148,7 @@ namespace dynamo {
   {
     size_t retval(0);
     typedef std::pair<const dynamo::ICapture::cMapKey, int> mapdata;
-    BOOST_FOREACH(const mapdata& IDs, captureMap)
+    for (const mapdata& IDs : captureMap)
       {
 	const Particle& p1(Sim->particles[IDs.first.first]);
 	const Particle& p2(Sim->particles[IDs.first.second]);

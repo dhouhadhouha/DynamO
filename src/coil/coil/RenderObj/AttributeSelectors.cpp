@@ -114,7 +114,7 @@ namespace coil {
     for (iterator iPtr = _comboBox.get_model()->children().begin();
 	 iPtr != _comboBox.get_model()->children().end(); ++iPtr)
       {
-	std::tr1::shared_ptr<Attribute> attr_ptr = (*iPtr)[_modelColumns.m_ptr];
+	std::shared_ptr<Attribute> attr_ptr = (*iPtr)[_modelColumns.m_ptr];
 	if ((attr_ptr) && (attr_ptr->getType() & defaultMask))
 	  {
 	    selected = iPtr;
@@ -132,7 +132,7 @@ namespace coil {
       M_throw() << "Cannot get the attribute buffer when in single value mode.";
 
     Gtk::TreeModel::iterator iter = _comboBox.get_active();
-    std::tr1::shared_ptr<Attribute> ptr = (*iter)[_modelColumns.m_ptr];
+    std::shared_ptr<Attribute> ptr = (*iter)[_modelColumns.m_ptr];
  
     if ((!_componentSelect.get_visible())
 	|| (_componentSelect.get_active_row_number() == 0))
@@ -158,7 +158,7 @@ namespace coil {
 
   void 
   AttributeSelector::generateFilteredData(std::vector<GLfloat>& scalardata,
-					  const std::tr1::shared_ptr<Attribute>& ptr,
+					  const std::shared_ptr<Attribute>& ptr,
 					  int mode)
   {
     //Update the data according to what was selected
@@ -226,7 +226,7 @@ namespace coil {
     Gtk::TreeModel::iterator iter = _comboBox.get_active();
     if (!iter) return std::vector<GLfloat>();
     
-    std::tr1::shared_ptr<Attribute> ptr = (*iter)[_modelColumns.m_ptr];
+    std::shared_ptr<Attribute> ptr = (*iter)[_modelColumns.m_ptr];
     if (!ptr) return std::vector<GLfloat>();
         
     return ptr->minVals();
@@ -241,7 +241,7 @@ namespace coil {
     Gtk::TreeModel::iterator iter = _comboBox.get_active();
     if (!iter) return std::vector<GLfloat>();
     
-    std::tr1::shared_ptr<Attribute> ptr = (*iter)[_modelColumns.m_ptr];
+    std::shared_ptr<Attribute> ptr = (*iter)[_modelColumns.m_ptr];
     if (!ptr) return std::vector<GLfloat>();
         
     return ptr->maxVals();
@@ -271,7 +271,7 @@ namespace coil {
 	_componentSelect.set_visible(true);
 
 	Gtk::TreeModel::iterator iter = _comboBox.get_active();
-	std::tr1::shared_ptr<Attribute> ptr = (*iter)[_modelColumns.m_ptr];
+	std::shared_ptr<Attribute> ptr = (*iter)[_modelColumns.m_ptr];
 
 	_componentSelect.append_text("Raw Data");
 	_componentSelect.append_text("Magnitude");

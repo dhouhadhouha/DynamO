@@ -49,7 +49,7 @@ namespace dynamo {
 	<< magnet::xml::attr("Elasticity") << _e->getName()
 	<< magnet::xml::attr("Lambda") << _lambda->getName()
 	<< magnet::xml::attr("Name") << intName
-	<< *range;
+	<< range;
 
     XML << magnet::xml::tag("Sequence");
   
@@ -114,7 +114,7 @@ namespace dynamo {
       //Initialise all the well depths to 1.0
       alphabet.resize(letters.size());
 
-      BOOST_FOREACH(std::vector<double>& vec, alphabet)
+      for (std::vector<double>& vec : alphabet)
 	vec.resize(letters.size(), 0.0);
 
       for (magnet::xml::Node node = XML.getNode("Alphabet").fastGetNode("Word");
@@ -159,7 +159,7 @@ namespace dynamo {
     double Energy = 0.0;
     typedef std::pair<size_t, size_t> locpair;
 
-    BOOST_FOREACH(const locpair& IDs, captureMap)
+    for (const locpair& IDs : captureMap)
       Energy += alphabet
       [sequence[IDs.first % sequence.size()]]
       [sequence[IDs.second % sequence.size()]] 
@@ -285,11 +285,11 @@ namespace dynamo {
       case CORE:
 	{
 	  PairEventData retVal(Sim->dynamics->SmoothSpheresColl(iEvent, e, d2, CORE));
-	  Sim->signalParticleUpdate(retVal);
+	  (*Sim->_sigParticleUpdate)(retVal);
 	
 	  Sim->ptrScheduler->fullUpdate(p1, p2);
 	
-	  BOOST_FOREACH(shared_ptr<OutputPlugin> & Ptr, Sim->outputPlugins)
+	  for (shared_ptr<OutputPlugin> & Ptr : Sim->outputPlugins)
 	    Ptr->eventUpdate(iEvent, retVal);
 
 	  break;
@@ -306,11 +306,11 @@ namespace dynamo {
 	  if (retVal.getType() != BOUNCE)
 	    addToCaptureMap(p1, p2);      
 
-	  Sim->signalParticleUpdate(retVal);
+	  (*Sim->_sigParticleUpdate)(retVal);
 
 	  Sim->ptrScheduler->fullUpdate(p1, p2);
 	
-	  BOOST_FOREACH(shared_ptr<OutputPlugin> & Ptr, Sim->outputPlugins)
+	  for (shared_ptr<OutputPlugin> & Ptr : Sim->outputPlugins)
 	    Ptr->eventUpdate(iEvent, retVal);
 
 	  break;
@@ -327,11 +327,11 @@ namespace dynamo {
 	  if (retVal.getType() != BOUNCE)
 	    removeFromCaptureMap(p1, p2);
 	
-	  Sim->signalParticleUpdate(retVal);
+	  (*Sim->_sigParticleUpdate)(retVal);
 
 	  Sim->ptrScheduler->fullUpdate(p1, p2);
 	
-	  BOOST_FOREACH(shared_ptr<OutputPlugin> & Ptr, Sim->outputPlugins)
+	  for (shared_ptr<OutputPlugin> & Ptr : Sim->outputPlugins)
 	    Ptr->eventUpdate(iEvent, retVal);
 
 	  break;

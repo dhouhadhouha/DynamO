@@ -23,7 +23,8 @@
 #include <dynamo/topology/include.hpp>
 #include <magnet/xmlwriter.hpp>
 #include <magnet/xmlreader.hpp>
-#include <boost/foreach.hpp>
+#include <cstring>
+
 
 namespace dynamo {
 
@@ -59,7 +60,7 @@ namespace dynamo {
   {
     XML << magnet::xml::attr("Name") << spName;
   
-    BOOST_FOREACH(const shared_ptr<IDRange>& plugPtr, ranges)
+    for (const shared_ptr<IDRange>& plugPtr : ranges)
       XML << magnet::xml::tag("Molecule") << plugPtr
 	  << magnet::xml::endtag("Molecule");
   }

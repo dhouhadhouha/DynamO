@@ -21,7 +21,6 @@
 #include <magnet/memUsage.hpp>
 #include <magnet/xmlwriter.hpp>
 #include <dynamo/systems/tHalt.hpp>
-#include <boost/foreach.hpp>
 #include <sys/time.h>
 #include <ctime>
 
@@ -107,7 +106,7 @@ namespace dynamo {
     _speciesMasses.clear();
     _speciesMasses.resize(Sim->species.size());
 
-    BOOST_FOREACH(const Particle& part, Sim->particles)
+    for (const Particle& part : Sim->particles)
       {
 	const Species& sp = *(Sim->species[part]);
 	const double mass = sp.getMass(part.getID());
@@ -192,10 +191,10 @@ namespace dynamo {
     stream(eevent.getdt());
     eventUpdate(NDat);
 
-    BOOST_FOREACH(const ParticleEventData& pData, NDat.L1partChanges)
+    for (const ParticleEventData& pData : NDat.L1partChanges)
       newEvent(pData.getParticleID(), pData.getType(), getClassKey(eevent));
 
-    BOOST_FOREACH(const PairEventData& pData, NDat.L2partChanges)
+    for (const PairEventData& pData : NDat.L2partChanges)
       {
 	newEvent(pData.particle1_.getParticleID(), pData.getType(), getClassKey(eevent));
 	newEvent(pData.particle2_.getParticleID(), pData.getType(), getClassKey(eevent));
@@ -208,10 +207,10 @@ namespace dynamo {
     stream(eevent.getdt());
     eventUpdate(NDat);
 
-    BOOST_FOREACH(const ParticleEventData& pData, NDat.L1partChanges)
+    for (const ParticleEventData& pData : NDat.L1partChanges)
       newEvent(pData.getParticleID(), pData.getType(), getClassKey(eevent));
 
-    BOOST_FOREACH(const PairEventData& pData, NDat.L2partChanges)
+    for (const PairEventData& pData : NDat.L2partChanges)
       {
 	newEvent(pData.particle1_.getParticleID(), pData.getType(), getClassKey(eevent));
 	newEvent(pData.particle2_.getParticleID(), pData.getType(), getClassKey(eevent));
@@ -224,10 +223,10 @@ namespace dynamo {
     stream(dt);
     eventUpdate(NDat);
 
-    BOOST_FOREACH(const ParticleEventData& pData, NDat.L1partChanges)
+    for (const ParticleEventData& pData : NDat.L1partChanges)
       newEvent(pData.getParticleID(), pData.getType(), getClassKey(eevent));
 
-    BOOST_FOREACH(const PairEventData& pData, NDat.L2partChanges)
+    for (const PairEventData& pData : NDat.L2partChanges)
       {
 	newEvent(pData.particle1_.getParticleID(), pData.getType(), getClassKey(eevent));
 	newEvent(pData.particle2_.getParticleID(), pData.getType(), getClassKey(eevent));
@@ -256,7 +255,7 @@ namespace dynamo {
   {
     Vector thermalDel(0,0,0);
 
-    BOOST_FOREACH(const ParticleEventData& PDat, NDat.L1partChanges)
+    for (const ParticleEventData& PDat : NDat.L1partChanges)
       {
 	const Particle& part = Sim->particles[PDat.getParticleID()];
 	const double p1E = Sim->dynamics->getParticleKineticEnergy(Sim->particles[PDat.getParticleID()]);
@@ -280,7 +279,7 @@ namespace dynamo {
 	  - PDat.getOldVel() * (p1E - PDat.getDeltaKE());
       }
 
-    BOOST_FOREACH(const PairEventData& PDat, NDat.L2partChanges)
+    for (const PairEventData& PDat : NDat.L2partChanges)
       {
 	_KE += PDat.particle1_.getDeltaKE() + PDat.particle2_.getDeltaKE();
 	_internalE += PDat.particle1_.getDeltaU() + PDat.particle2_.getDeltaU();
@@ -493,7 +492,7 @@ namespace dynamo {
 	<< magnet::xml::tag("EventCounters");
   
     typedef std::pair<EventKey, size_t> mappair;
-    BOOST_FOREACH(const mappair& mp1, _counters)
+    for (const mappair& mp1 : _counters)
       XML << magnet::xml::tag("Entry")
 	  << magnet::xml::attr("Type") << getClass(mp1.first.first)
 	  << magnet::xml::attr("Name") << getName(mp1.first.first, Sim)
@@ -652,8 +651,8 @@ namespace dynamo {
 
     //Calculate the ETA of the simulation, and take care with overflows and the like
     double _earliest_end_time = HUGE_VAL;
-    BOOST_FOREACH(const std::tr1::shared_ptr<System>& sysPtr, Sim->systems)
-      if (std::tr1::dynamic_pointer_cast<SystHalt>(sysPtr))
+    for (const std::shared_ptr<System>& sysPtr : Sim->systems)
+      if (std::dynamic_pointer_cast<SystHalt>(sysPtr))
 	_earliest_end_time = std::min(_earliest_end_time, sysPtr->getdt());
 
     double time_seconds_remaining = _earliest_end_time 

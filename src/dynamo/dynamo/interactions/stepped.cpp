@@ -162,7 +162,7 @@ namespace dynamo {
 
     typedef std::pair<const std::pair<size_t, size_t>, int> locpair;
 
-    BOOST_FOREACH(const locpair& IDs, captureMap)
+    for (const locpair& IDs : captureMap)
       Energy += steps[IDs.second - 1].second 
       * 0.5 * (_unitEnergy->getProperty(IDs.first.first)
 	       + _unitEnergy->getProperty(IDs.first.second));
@@ -264,11 +264,11 @@ namespace dynamo {
 	      //capstat is zero so delete
 	      captureMap.erase(capstat);
 
-	  Sim->signalParticleUpdate(retVal);
+	  (*Sim->_sigParticleUpdate)(retVal);
 
 	  Sim->ptrScheduler->fullUpdate(p1, p2);
 	
-	  BOOST_FOREACH(shared_ptr<OutputPlugin> & Ptr, Sim->outputPlugins)
+	  for (shared_ptr<OutputPlugin> & Ptr : Sim->outputPlugins)
 	    Ptr->eventUpdate(iEvent, retVal);
 	  break;
 	}
@@ -299,11 +299,11 @@ namespace dynamo {
 	  else if (!capstat->second)
 	    captureMap.erase(capstat);
 	
-	  Sim->signalParticleUpdate(retVal);
+	  (*Sim->_sigParticleUpdate)(retVal);
 	
 	  Sim->ptrScheduler->fullUpdate(p1, p2);
 	
-	  BOOST_FOREACH(shared_ptr<OutputPlugin> & Ptr, Sim->outputPlugins)
+	  for (shared_ptr<OutputPlugin> & Ptr : Sim->outputPlugins)
 	    Ptr->eventUpdate(iEvent, retVal);
 	    
 	  break;
@@ -361,9 +361,9 @@ namespace dynamo {
   {
     XML << magnet::xml::attr("Type") << "Stepped"
 	<< magnet::xml::attr("Name") << intName
-	<< *range;
+	<< range;
 
-    BOOST_FOREACH(const steppair& s, steps)
+    for (const steppair& s : steps)
       XML << magnet::xml::tag("Step")
 	  << magnet::xml::attr("R") << s.first 
 	  << magnet::xml::attr("E") << s.second

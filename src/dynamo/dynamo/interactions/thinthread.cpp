@@ -143,11 +143,11 @@ namespace dynamo {
 	      addToCaptureMap(p1, p2);
 	    }
 
-	  Sim->signalParticleUpdate(retVal);
+	  (*Sim->_sigParticleUpdate)(retVal);
 	
 	  Sim->ptrScheduler->fullUpdate(p1, p2);
 	
-	  BOOST_FOREACH(shared_ptr<OutputPlugin> & Ptr, Sim->outputPlugins)
+	  for (shared_ptr<OutputPlugin> & Ptr : Sim->outputPlugins)
 	    Ptr->eventUpdate(event, retVal);
 
 	  break;
@@ -159,11 +159,11 @@ namespace dynamo {
 	  if (retVal.getType() != BOUNCE)
 	    removeFromCaptureMap(p1, p2);      
 
-	  Sim->signalParticleUpdate(retVal);
+	  (*Sim->_sigParticleUpdate)(retVal);
 
 	  Sim->ptrScheduler->fullUpdate(p1, p2);
 	
-	  BOOST_FOREACH(shared_ptr<OutputPlugin> & Ptr, Sim->outputPlugins)
+	  for (shared_ptr<OutputPlugin> & Ptr : Sim->outputPlugins)
 	    Ptr->eventUpdate(iEvent, retVal);
 	  break;
 	}
@@ -232,7 +232,7 @@ namespace dynamo {
 	<< magnet::xml::attr("Lambda") << _lambda->getName()
 	<< magnet::xml::attr("WellDepth") << _wellDepth->getName()
 	<< magnet::xml::attr("Name") << intName
-	<< *range;
+	<< range;
   
     ISingleCapture::outputCaptureMap(XML);  
   }

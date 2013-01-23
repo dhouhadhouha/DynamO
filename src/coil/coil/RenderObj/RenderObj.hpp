@@ -20,7 +20,7 @@
 #include <magnet/thread/taskQueue.hpp>
 #include <magnet/GL/camera.hpp>
 #include <magnet/GL/FBO.hpp>
-#include <tr1/memory>
+#include <memory>
 
 namespace Gtk { class ScrolledWindow; }
 
@@ -72,7 +72,7 @@ namespace coil {
        data. This is to allow callbacks to the (simulation) thread
        when user-generated interface events occur.
      */
-    virtual void init(const std::tr1::shared_ptr<magnet::thread::TaskQueue>& systemQueue) 
+    virtual void init(const std::shared_ptr<magnet::thread::TaskQueue>& systemQueue) 
     { _systemQueue = systemQueue; }
 
     /*! \brief Release any OpenCL, OpenGL and GTK resources held by
@@ -98,7 +98,7 @@ namespace coil {
      */
     virtual void forwardRender(magnet::GL::FBO& fbo, 
 			       const magnet::GL::Camera& cam,
-			       std::vector<std::tr1::shared_ptr<RLight> >& lights,
+			       std::vector<std::shared_ptr<RLight> >& lights,
 			       GLfloat ambientLight,
 			       RenderMode mode) 
     {}
@@ -164,8 +164,8 @@ namespace coil {
 	
 	\param my_ptr A shared pointer of *this object.
      */
-    virtual std::tr1::shared_ptr<RenderObj> 
-    getPickedObject(uint32_t& objID, const std::tr1::shared_ptr<RenderObj>& my_ptr)
+    virtual std::shared_ptr<RenderObj> 
+    getPickedObject(uint32_t& objID, const std::shared_ptr<RenderObj>& my_ptr)
     { return my_ptr; }
 
     
@@ -189,7 +189,7 @@ namespace coil {
 	
 	\sa pickingRender()
      */
-    virtual std::tr1::array<GLfloat, 4> getCursorPosition(uint32_t objID)
+    virtual std::array<GLfloat, 4> getCursorPosition(uint32_t objID)
     {
       M_throw() << "This object is not pickable";
     }
@@ -274,7 +274,7 @@ namespace coil {
 
     /*! \brief Returns the system queue.
      */    
-    std::tr1::shared_ptr<magnet::thread::TaskQueue> getQueue() { return _systemQueue; }
+    std::shared_ptr<magnet::thread::TaskQueue> getQueue() { return _systemQueue; }
 
     
     /*! \brief Called when the object should be deleted.
@@ -287,7 +287,7 @@ namespace coil {
     std::string _name;
     bool _visible;
     bool _shadowCasting;
-    std::tr1::shared_ptr<magnet::thread::TaskQueue> _systemQueue;
+    std::shared_ptr<magnet::thread::TaskQueue> _systemQueue;
   };
 
   class RenderObjectsGtkTreeView
@@ -310,11 +310,11 @@ namespace coil {
       Gtk::TreeModelColumn<Glib::RefPtr<Gdk::Pixbuf> > m_icon;
     };
     
-    std::auto_ptr<ModelColumns> _columns;
+    std::unique_ptr<ModelColumns> _columns;
     Glib::RefPtr<Gtk::TreeStore> _store;
     Gtk::TreeView* _view;
 
-    std::vector<std::tr1::shared_ptr<RenderObj> > _renderObjects;
+    std::vector<std::shared_ptr<RenderObj> > _renderObjects;
 
     void delete_obj(RenderObj*);
 

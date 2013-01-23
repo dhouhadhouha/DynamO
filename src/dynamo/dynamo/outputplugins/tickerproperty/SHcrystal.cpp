@@ -21,7 +21,6 @@
 #include <dynamo/units/units.hpp>
 #include <dynamo/BC/BC.hpp>
 #include <boost/math/special_functions/spherical_harmonic.hpp>
-#include <boost/foreach.hpp>
 #include <magnet/math/wigner3J.hpp>
 #include <magnet/xmlwriter.hpp>
 #include <magnet/xmlreader.hpp>
@@ -66,8 +65,8 @@ namespace dynamo {
   OPSHCrystal::initialise() 
   { 
     double smallestlength = HUGE_VAL;
-    BOOST_FOREACH(const shared_ptr<Global>& pGlob, Sim->globals)
-      if (std::tr1::dynamic_pointer_cast<GNeighbourList>(pGlob))
+    for (const shared_ptr<Global>& pGlob : Sim->globals)
+      if (std::dynamic_pointer_cast<GNeighbourList>(pGlob))
 	{
 	  const double l(static_cast<const GNeighbourList*>(pGlob.get())
 			 ->getMaxSupportedInteractionLength());
@@ -95,10 +94,10 @@ namespace dynamo {
   {
     sphericalsum ssum(Sim, rg, maxl);
   
-    BOOST_FOREACH(const Particle& part, Sim->particles)
+    for (const Particle& part : Sim->particles)
       {
-	std::auto_ptr<IDRange> ids(Sim->ptrScheduler->getParticleNeighbours(part));
-	BOOST_FOREACH(const size_t& id1, *ids)
+	std::unique_ptr<IDRange> ids(Sim->ptrScheduler->getParticleNeighbours(part));
+	for (const size_t& id1 : *ids)
 	  ssum(part, id1);
       
 	for (size_t l(0); l < maxl; ++l)

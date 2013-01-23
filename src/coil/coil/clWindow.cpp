@@ -27,7 +27,6 @@
 
 #include <magnet/image/PNG.hpp>
 #include <magnet/image/bitmap.hpp>
-#include <magnet/function/task.hpp>
 #include <magnet/gtk/numericEntry.hpp>
 #include <gtkmm/volumebutton.h>
 #include <boost/lexical_cast.hpp>
@@ -581,12 +580,12 @@ namespace coil {
   void
   CLGLWindow::init()
   {
-    magnet::thread::ScopedLock lock(_destroyLock);
+    std::lock_guard<std::mutex> lock(_destroyLock);
 
     if (_readyFlag) return;
   
     {
-      std::tr1::shared_ptr<RLight> light(new RLight("Light 1",
+      std::shared_ptr<RLight> light(new RLight("Light 1",
 						    Vector(-25.0f,  25.0f, -25.0f) / _camera.getRenderScale(),//Position
 						    Vector(0.0f, 0.0f, 0.0f),//Lookat
 						    30.0, 10000.0f, magnet::math::Vector(0,1,0), _camera.getRenderScale()
@@ -595,7 +594,7 @@ namespace coil {
     }
 
     {
-      std::tr1::shared_ptr<RLight> light(new RLight("Light 2",
+      std::shared_ptr<RLight> light(new RLight("Light 2",
 						    Vector(25.0f,  25.0f, -25.0f) / _camera.getRenderScale(),//Position
 						    Vector(0.0f, 0.0f, 0.0f),//Lookat
 						    30.0, 10000.0f, magnet::math::Vector(0,1,0), _camera.getRenderScale()
@@ -604,7 +603,7 @@ namespace coil {
     }
 
     {
-      std::tr1::shared_ptr<RLight> light(new RLight("Light 3",
+      std::shared_ptr<RLight> light(new RLight("Light 3",
 						    Vector(0.0f,  25.0f, 25.0f) / _camera.getRenderScale(),//Position
 						    Vector(0.0f, 0.0f, 0.0f),//Lookat
 						    30.0, 10000.0f, magnet::math::Vector(0,1,0), _camera.getRenderScale()
@@ -613,8 +612,8 @@ namespace coil {
     }
   
     _consoleID = _renderObjsTree._renderObjects.size();
-    std::tr1::array<GLfloat, 3> textcolor  = {{0.5, 0.5, 0.5}};
-    std::tr1::shared_ptr<RenderObj> consoleObj(new Console(textcolor)); 
+    std::array<GLfloat, 3> textcolor  = {{0.5, 0.5, 0.5}};
+    std::shared_ptr<RenderObj> consoleObj(new Console(textcolor)); 
     _renderObjsTree._renderObjects.push_back(consoleObj);
 
     glutInitContextVersion(3, 3);
@@ -656,9 +655,8 @@ namespace coil {
     _cairo_screen.init(600, 600);
 
       //Now init the render objects  
-    for (std::vector<std::tr1::shared_ptr<RenderObj> >::iterator iPtr = _renderObjsTree._renderObjects.begin();
-	 iPtr != _renderObjsTree._renderObjects.end(); ++iPtr)
-      (*iPtr)->init(_systemQueue);
+    for (auto& obj: _renderObjsTree._renderObjects)
+      obj->init(_systemQueue);
   
     try {
       initGTK();
@@ -674,17 +672,16 @@ namespace coil {
   void
   CLGLWindow::deinit()
   {
-    magnet::thread::ScopedLock lock(_destroyLock);
+    std::lock_guard<std::mutex> lock(_destroyLock);
   
     if (!_readyFlag) return;
     _readyFlag = false;
 
     ////////////////////GTK
     //Get rid of any filters, if we call the callback, a dialog will be instanced
-    for (Gtk::TreeModel::iterator iPtr = _filterStore->children().begin();
-	 iPtr; ++iPtr)
+    for (auto& child : _filterStore->children())
       {
-	void* tmp_ptr = (*iPtr)[_filterModelColumns->m_filter_ptr];
+	void* tmp_ptr = child[_filterModelColumns->m_filter_ptr];
 	delete static_cast<Filter*>(tmp_ptr);
       }
     _filterStore->clear();
@@ -702,12 +699,9 @@ namespace coil {
     _aasamples.reset();
 
     ///////////////////OpenGL
-    for (std::vector<std::tr1::shared_ptr<RenderObj> >::iterator iPtr = _renderObjsTree._renderObjects.begin();
-	 iPtr != _renderObjsTree._renderObjects.end(); ++iPtr)
-      (*iPtr)->deinit();
+    for (auto& obj : _renderObjsTree._renderObjects) obj->deinit();
 
     _renderObjsTree._renderObjects.clear();
-
     _renderTarget.deinit();
     _Gbuffer.deinit();
     _hdrBuffer.deinit();
@@ -753,7 +747,7 @@ namespace coil {
     _camera.setRotatePoint(_cameraFocus);
     if (_selectedObject && (_cameraMode == ROTATE_POINT))
       {
-	std::tr1::array<GLfloat, 4> vec = _selectedObject->getCursorPosition(_selectedObjectID);
+	std::array<GLfloat, 4> vec = _selectedObject->getCursorPosition(_selectedObjectID);
 	_camera.setRotatePoint(magnet::math::Vector(vec[0], vec[1], vec[2]));
       }
 
@@ -771,12 +765,12 @@ namespace coil {
     ////////////Lighting shadow map creation////////////////////
     //This stage only needs to be performed once per frame
     
-//    for (std::vector<std::tr1::shared_ptr<RenderObj> >::iterator iPtr 
+//    for (std::vector<std::shared_ptr<RenderObj> >::iterator iPtr 
 //	   = _renderObjsTree._renderObjects.begin();
 //	 iPtr != _renderObjsTree._renderObjects.end(); ++iPtr)
-//      if ((*iPtr)->shadowCasting() && std::tr1::dynamic_pointer_cast<RLight>(*iPtr))
+//      if ((*iPtr)->shadowCasting() && std::dynamic_pointer_cast<RLight>(*iPtr))
 //	{
-//	  std::tr1::shared_ptr<RLight> light = std::tr1::static_pointer_cast<RLight>(*iPtr);
+//	  std::shared_ptr<RLight> light = std::static_pointer_cast<RLight>(*iPtr);
 //	  if (light)
 //	    {
 //	      _VSMShader.attach();
@@ -787,7 +781,7 @@ namespace coil {
 //	      glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 //
 //	      //Enter the render ticks for all objects
-//	      for (std::vector<std::tr1::shared_ptr<RenderObj> >::iterator jPtr 
+//	      for (std::vector<std::shared_ptr<RenderObj> >::iterator jPtr 
 //		     = _renderObjsTree._renderObjects.begin();
 //		   jPtr != _renderObjsTree._renderObjects.end(); ++jPtr)
 //		if (iPtr != jPtr)
@@ -954,11 +948,8 @@ namespace coil {
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     
     //Enter the render ticks for all objects
-    for (std::vector<std::tr1::shared_ptr<RenderObj> >::iterator iPtr 
-	   = _renderObjsTree._renderObjects.begin();
-	 iPtr != _renderObjsTree._renderObjects.end(); ++iPtr)
-      if ((*iPtr)->visible()) 
-	(*iPtr)->glRender(camera, RenderObj::DEFAULT);
+    for (auto& obj :_renderObjsTree._renderObjects)
+      if (obj->visible()) obj->glRender(camera, RenderObj::DEFAULT);
 
     _Gbuffer.detach();
     
@@ -1009,32 +1000,20 @@ namespace coil {
     _pointLightShader["positionTex"] = 2;
     _pointLightShader["samples"] = GLint(_samples);
 
-    for (std::vector<std::tr1::shared_ptr<RenderObj> >::iterator iPtr 
-	   = _renderObjsTree._renderObjects.begin();
-	 iPtr != _renderObjsTree._renderObjects.end(); ++iPtr)
-      if (std::tr1::dynamic_pointer_cast<RLight>(*iPtr))
+    std::vector<std::shared_ptr<RLight> > lights;
+    for (auto& obj :_renderObjsTree._renderObjects)
+      if (std::dynamic_pointer_cast<RLight>(obj))
 	{
-	  std::tr1::shared_ptr<RLight> light 
-	    = std::tr1::dynamic_pointer_cast<RLight>(*iPtr);
-
+	  std::shared_ptr<RLight> light = std::static_pointer_cast<RLight>(obj);
 	  _pointLightShader["lightColor"] = light->getLightColor();
 	  _pointLightShader["lightSpecularExponent"] = light->getSpecularExponent();
 	  _pointLightShader["lightSpecularFactor"] = light->getSpecularFactor();
 	  _pointLightShader["lightPosition"] = light->getEyespacePosition(camera);
 	  _pointLightShader.invoke();
+	  lights.push_back(light);
 	}
     
     _pointLightShader.detach();
-
-    ///////////////////////Forward Shading Pass /////////////////
-    std::vector<std::tr1::shared_ptr<RLight> > lights;
-    
-
-    for (std::vector<std::tr1::shared_ptr<RenderObj> >::iterator iPtr 
-	   = _renderObjsTree._renderObjects.begin();
-	 iPtr != _renderObjsTree._renderObjects.end(); ++iPtr)
-      if (std::tr1::dynamic_pointer_cast<RLight>(*iPtr))
-	lights.push_back(std::tr1::dynamic_pointer_cast<RLight>(*iPtr));
 
     _glContext->setBlend(true);
     _glContext->setDepthTest(true);
@@ -1042,12 +1021,10 @@ namespace coil {
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
     //Enter the forward render ticks for all objects
-    for (std::vector<std::tr1::shared_ptr<RenderObj> >::iterator iPtr 
-	   = _renderObjsTree._renderObjects.begin();
-	 iPtr != _renderObjsTree._renderObjects.end(); ++iPtr)
-      if ((*iPtr)->visible())
-	(*iPtr)->forwardRender(_hdrBuffer, camera, lights, 
-			       _ambientIntensity, RenderObj::DEFAULT);
+    for (auto& obj : _renderObjsTree._renderObjects)
+      if (obj->visible())
+	obj->forwardRender(_hdrBuffer, camera, lights, 
+			   _ambientIntensity, RenderObj::DEFAULT);
     
     _hdrBuffer.detach();	
     ///////////////////////Luminance Sampling//////////////////////
@@ -1104,7 +1081,7 @@ namespace coil {
 	  luminanceSource->getColorTexture()->bind(0);
 	  _luminanceMipMapShader["inputTex"] = 0;
 
-	  std::tr1::array<GLint,2> oldSize = {{currentWidth, currentHeight}};
+	  std::array<GLint,2> oldSize = {{currentWidth, currentHeight}};
 	  _luminanceMipMapShader["oldSize"] = oldSize;
 
 	  //Halve the size of the textures, ensuring they never drop below 1
@@ -1131,7 +1108,7 @@ namespace coil {
 	_downsampleShader.attach();
 	_downsampleShader["inputTex"] = 0;
 	_downsampleShader["downscale"] = GLint(4);
-	std::tr1::array<GLint,2> oldSize = {{tex.getWidth(), tex.getHeight()}};
+	std::array<GLint,2> oldSize = {{tex.getWidth(), tex.getHeight()}};
 	_downsampleShader["oldSize"] = oldSize;
 	_downsampleShader.invoke();
 	_downsampleShader.detach();
@@ -1140,7 +1117,7 @@ namespace coil {
 
 	_blurShader.attach();
 	_blurShader["colorTex"] = 0;
-	std::tr1::array<GLfloat, 2> invDim = {{1.0f / (tex.getWidth() / 4),
+	std::array<GLfloat, 2> invDim = {{1.0f / (tex.getWidth() / 4),
 					       1.0f / (tex.getHeight() / 4)}};
 	_blurShader["invDim"] = invDim;
 
@@ -1202,13 +1179,12 @@ namespace coil {
        	//Screen space positions 2
        	_Gbuffer.getColorTexture(2)->bind(2);
          
-       	for (Gtk::TreeModel::iterator iPtr = _filterStore->children().begin();
-       	     iPtr != _filterStore->children().end(); ++iPtr)
+       	for (auto& child : _filterStore->children())
        	  {
-       	    void* filter_ptr = (*iPtr)[_filterModelColumns->m_filter_ptr];
+       	    void* filter_ptr = child[_filterModelColumns->m_filter_ptr];
        	    Filter& filter = *static_cast<Filter*>(filter_ptr);
        	  
-       	    if (!((*iPtr)[_filterModelColumns->m_active])) continue; //Only run active filters, skip to the next filter
+       	    if (!(child[_filterModelColumns->m_active])) continue; //Only run active filters, skip to the next filter
        	    if (filter.type_id() == detail::filterEnum<FlushToOriginal>::val)
        	      {//Check if we're trying to flush the drawing
        		lastFBO->attach();
@@ -1248,14 +1224,13 @@ namespace coil {
     _cairo_screen.clear();
 
     _glContext->cleanupAttributeArrays();
-    for (std::vector<std::tr1::shared_ptr<RenderObj> >::iterator iPtr = _renderObjsTree._renderObjects.begin();
-	 iPtr != _renderObjsTree._renderObjects.end(); ++iPtr)
-      (*iPtr)->interfaceRender(_camera, _cairo_screen);
+    for (auto& obj : _renderObjsTree._renderObjects)
+      obj->interfaceRender(_camera, _cairo_screen);
 
     //Draw the cursor if an object is selected
     if (_selectedObject)
       {
-	std::tr1::array<GLfloat, 4> vec = _selectedObject->getCursorPosition(_selectedObjectID);
+	std::array<GLfloat, 4> vec = _selectedObject->getCursorPosition(_selectedObjectID);
 	vec = camera.project(Vector(vec[0], vec[1], vec[2]));
 	_cairo_screen.drawCursor(vec[0], vec[1], 5);
 	_cairo_screen.drawTextBox(vec[0] + 5, vec[1] + 5, 
@@ -1308,7 +1283,7 @@ namespace coil {
     _blurTarget2.deinit();
 
     {
-      std::tr1::shared_ptr<magnet::GL::Texture2D> colorTexture(new magnet::GL::Texture2D);
+      std::shared_ptr<magnet::GL::Texture2D> colorTexture(new magnet::GL::Texture2D);
       colorTexture->init(_camera.getWidth(), _camera.getHeight(), GL_RGBA);
       colorTexture->parameter(GL_TEXTURE_MIN_FILTER, GL_NEAREST);
       colorTexture->parameter(GL_TEXTURE_MAG_FILTER, GL_NEAREST);
@@ -1320,7 +1295,7 @@ namespace coil {
     }
 
     {
-      std::tr1::shared_ptr<magnet::GL::Texture2D> colorTexture(new magnet::GL::Texture2D);
+      std::shared_ptr<magnet::GL::Texture2D> colorTexture(new magnet::GL::Texture2D);
       colorTexture->init(_camera.getWidth(), _camera.getHeight(), GL_RGBA);
       colorTexture->parameter(GL_TEXTURE_MIN_FILTER, GL_NEAREST);
       colorTexture->parameter(GL_TEXTURE_MAG_FILTER, GL_NEAREST);
@@ -1332,7 +1307,7 @@ namespace coil {
     }
 
     {
-      std::tr1::shared_ptr<magnet::GL::Texture2D> colorTexture(new magnet::GL::Texture2D);
+      std::shared_ptr<magnet::GL::Texture2D> colorTexture(new magnet::GL::Texture2D);
       colorTexture->init(_camera.getWidth() / 4, _camera.getHeight() / 4, GL_RGB16F);
       colorTexture->parameter(GL_TEXTURE_MIN_FILTER, GL_LINEAR);
       colorTexture->parameter(GL_TEXTURE_MAG_FILTER, GL_LINEAR);
@@ -1344,7 +1319,7 @@ namespace coil {
     }
 
     {
-      std::tr1::shared_ptr<magnet::GL::Texture2D> colorTexture(new magnet::GL::Texture2D);
+      std::shared_ptr<magnet::GL::Texture2D> colorTexture(new magnet::GL::Texture2D);
       colorTexture->init(_camera.getWidth() / 4, _camera.getHeight() / 4, GL_RGB16F);
       colorTexture->parameter(GL_TEXTURE_MIN_FILTER, GL_LINEAR);
       colorTexture->parameter(GL_TEXTURE_MAG_FILTER, GL_LINEAR);
@@ -1357,13 +1332,13 @@ namespace coil {
 
     {
       //Build the main/left-eye render buffer
-      std::tr1::shared_ptr<magnet::GL::Texture2D> 
+      std::shared_ptr<magnet::GL::Texture2D> 
 	colorTexture(new magnet::GL::Texture2D);
       colorTexture->init(_camera.getWidth(), _camera.getHeight(), GL_RGBA);
       colorTexture->parameter(GL_TEXTURE_MIN_FILTER, GL_LINEAR);
       colorTexture->parameter(GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 
-      std::tr1::shared_ptr<magnet::GL::Texture2D> 
+      std::shared_ptr<magnet::GL::Texture2D> 
 	depthTexture(new magnet::GL::Texture2D);
       depthTexture->init(_camera.getWidth(), _camera.getHeight(), 
 			 GL_DEPTH_COMPONENT);
@@ -1377,13 +1352,13 @@ namespace coil {
     }
 
     {
-      std::tr1::shared_ptr<magnet::GL::Texture2D> 
+      std::shared_ptr<magnet::GL::Texture2D> 
 	colorTexture(new magnet::GL::Texture2D);
       colorTexture->init(_camera.getWidth(), _camera.getHeight(), GL_RGBA16F);
       colorTexture->parameter(GL_TEXTURE_MIN_FILTER, GL_NEAREST);
       colorTexture->parameter(GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 
-      std::tr1::shared_ptr<magnet::GL::Texture2D> 
+      std::shared_ptr<magnet::GL::Texture2D> 
 	depthTexture(new magnet::GL::Texture2D);
       depthTexture->init(_camera.getWidth(), _camera.getHeight(), 
 			 GL_DEPTH_COMPONENT);
@@ -1397,7 +1372,7 @@ namespace coil {
     }
       
     {
-      std::tr1::shared_ptr<magnet::GL::Texture2D> 
+      std::shared_ptr<magnet::GL::Texture2D> 
 	colorTexture(new magnet::GL::Texture2D);
 	
       colorTexture->init(_camera.getWidth(), _camera.getHeight(), GL_RGBA16F);
@@ -1409,7 +1384,7 @@ namespace coil {
     }
 
     {
-      std::tr1::shared_ptr<magnet::GL::Texture2D> 
+      std::shared_ptr<magnet::GL::Texture2D> 
 	colorTexture(new magnet::GL::Texture2D);
 	
       colorTexture->init(_camera.getWidth()/2, _camera.getHeight()/2, GL_RGBA16F);
@@ -1511,7 +1486,7 @@ namespace coil {
 	  //We're dragging a selected object (the picking occurs on
 	  //right mouse button down). Calculate the current position
 	  //of the cursor
-	  std::tr1::array<GLfloat, 4> vec 
+	  std::array<GLfloat, 4> vec 
 	    = _selectedObject->getCursorPosition(_selectedObjectID);
 	  const magnet::math::Vector origin(vec[0], vec[1], vec[2]);
 	  const magnet::math::Vector camdir = _camera.getCameraDirection();
@@ -1570,7 +1545,7 @@ namespace coil {
     //set has been rendered, or we're about to pause the simulation
     if ((_lastUpdateTime != getLastFrameTime()) || !_simrun)
       {
-	magnet::thread::ScopedLock lock(_destroyLock);
+	std::lock_guard<std::mutex> lock(_destroyLock);
 	if (!isReady()) return;
 	_updateDataSignal();
 	_newData = true;
@@ -1836,10 +1811,9 @@ namespace coil {
       {
       case Gtk::RESPONSE_OK:
 	{
-	  for (Gtk::TreeModel::iterator iPtr = _filterStore->children().begin();
-	       iPtr; ++iPtr)
+	  for (auto& child : _filterStore->children())
 	    {
-	      void* tmp_ptr = (*iPtr)[_filterModelColumns->m_filter_ptr];
+	      void* tmp_ptr = child[_filterModelColumns->m_filter_ptr];
 	      delete static_cast<Filter*>(tmp_ptr);
 	    }
 	
@@ -1884,7 +1858,7 @@ namespace coil {
   namespace {
     struct IterFinder
     {
-      IterFinder(std::tr1::shared_ptr<RenderObj> selected, Gtk::TreeModelColumn<RenderObj*> col):
+      IterFinder(std::shared_ptr<RenderObj> selected, Gtk::TreeModelColumn<RenderObj*> col):
 	_selected(selected),
 	_col(col)
       {}
@@ -1903,7 +1877,7 @@ namespace coil {
       }
 
       Gtk::TreeModel::iterator _iter;
-      std::tr1::shared_ptr<RenderObj> _selected;
+      std::shared_ptr<RenderObj> _selected;
       Gtk::TreeModelColumn<RenderObj*> _col;
     };
   }
@@ -1918,16 +1892,14 @@ namespace coil {
     uint32_t offset = 1;
     //Now render the scene
     //Enter the render ticks for all objects
-    for (std::vector<std::tr1::shared_ptr<RenderObj> >::iterator 
-	   iPtr = _renderObjsTree._renderObjects.begin();
-	 iPtr != _renderObjsTree._renderObjects.end(); ++iPtr)
+    for (auto& obj : _renderObjsTree._renderObjects)
       {
-	const uint32_t n_objects = (*iPtr)->pickableObjectCount();
+	const uint32_t n_objects = obj->pickableObjectCount();
 	
 	//If there are pickable objects and they are visible, then render them.
 	if (n_objects)
 	  {
-	    (*iPtr)->pickingRender(_camera, offset);
+	    obj->pickingRender(_camera, offset);
 	    offset += n_objects;
 	  }
       }
@@ -1948,16 +1920,14 @@ namespace coil {
       + 256 * (pixel[1] + 256 * (pixel[2] + 256 * pixel[3]));
 
     offset = 1;
-    for (std::vector<std::tr1::shared_ptr<RenderObj> >::iterator 
-	   iPtr = _renderObjsTree._renderObjects.begin();
-	 iPtr != _renderObjsTree._renderObjects.end(); ++iPtr)
+    for (auto& obj : _renderObjsTree._renderObjects)
       { 
-	const uint32_t n_objects = (*iPtr)->pickableObjectCount();
+	const uint32_t n_objects = obj->pickableObjectCount();
 	
 	if ((_selectedObjectGlobalID >= offset) && (_selectedObjectGlobalID - offset) < n_objects)
 	  {
 	    _selectedObjectID = _selectedObjectGlobalID - offset;
-	    _selectedObject = (*iPtr)->getPickedObject(_selectedObjectID, *iPtr);
+	    _selectedObject = obj->getPickedObject(_selectedObjectID, obj);
 	    break;
 	  }
 	offset += n_objects;
@@ -2036,7 +2006,7 @@ namespace coil {
   void
   CLGLWindow::addLightCallback()
   {
-    std::tr1::shared_ptr<RLight> light(new RLight("Light",
+    std::shared_ptr<RLight> light(new RLight("Light",
 						  Vector(0, 0, 0),
 						  Vector(0, -1, 0),//Lookat
 						  75.0f//Beam angle
@@ -2049,7 +2019,7 @@ namespace coil {
   void
   CLGLWindow::addFunctionCallback()
   {
-    std::tr1::shared_ptr<RSurface> function(new RSurface("Function"));
+    std::shared_ptr<RSurface> function(new RSurface("Function"));
     _renderObjsTree._renderObjects.push_back(function);
     _renderObjsTree._renderObjects.back()->init(_systemQueue);
     _renderObjsTree.buildRenderView();
@@ -2312,7 +2282,7 @@ namespace coil {
     _refXml->get_widget("SimDataLabel1", label);
 
     CoilRegister::getCoilInstance().getTaskQueue()
-      .queueTask(magnet::function::Task::makeTask(&CLGLWindow::setLabelText, this, label, status));
+      .queueTask(std::bind(&CLGLWindow::setLabelText, this, label, status));
   }
 
   void 
@@ -2322,7 +2292,7 @@ namespace coil {
     _refXml->get_widget("SimDataLabel2", label);
   
     CoilRegister::getCoilInstance().getTaskQueue()
-      .queueTask(magnet::function::Task::makeTask(&CLGLWindow::setLabelText, this, label, status));
+      .queueTask(std::bind(&CLGLWindow::setLabelText, this, label, status));
   }
 
   void 
@@ -2377,22 +2347,18 @@ namespace coil {
 
 	//Draw the tracked sources with a red dot, but only if there are just two sources!
       
-	const std::vector<magnet::TrackWiimote::IRData>& irdata 
-	  = magnet::TrackWiimote::getInstance().getSortedIRData();
-      
 	size_t trackeddrawn = 2;
-	for (std::vector<magnet::TrackWiimote::IRData>::const_iterator iPtr = irdata.begin();
-	     iPtr != irdata.end(); ++iPtr)
+	for (const auto& irdata : magnet::TrackWiimote::getInstance().getSortedIRData())
 	  {
 	    cr->save();
 	    if (trackeddrawn-- > 0)
 	      cr->set_source_rgb(1, 0, 0);
 
-	    float x = ir->get_allocation().get_width() * (1 - float(iPtr->x) / CWIID_IR_X_MAX);
-	    float y = ir->get_allocation().get_height() * (1 - float(iPtr->y) / CWIID_IR_Y_MAX) ;
+	    float x = ir->get_allocation().get_width() * (1 - float(irdata.x) / CWIID_IR_X_MAX);
+	    float y = ir->get_allocation().get_height() * (1 - float(irdata.y) / CWIID_IR_Y_MAX) ;
 
 	    cr->translate(x, y);
-	    cr->arc(0, 0, iPtr->size + 1, 0, 2 * M_PI);
+	    cr->arc(0, 0, irdata.size + 1, 0, 2 * M_PI);
 	    cr->fill();	    
 	    cr->restore();
 	  }
@@ -2408,16 +2374,16 @@ namespace coil {
       _samples = boost::lexical_cast<size_t>(_aasamples->get_active_text());
 
     //Build G buffer      
-    std::tr1::shared_ptr<magnet::GL::Texture2D> colorTexture(new magnet::GL::Texture2DMultisampled(_samples));
+    std::shared_ptr<magnet::GL::Texture2D> colorTexture(new magnet::GL::Texture2DMultisampled(_samples));
     colorTexture->init(_camera.getWidth(), _camera.getHeight(), GL_RGBA16F_ARB);
     
-    std::tr1::shared_ptr<magnet::GL::Texture2D> normalTexture(new magnet::GL::Texture2DMultisampled(_samples));
+    std::shared_ptr<magnet::GL::Texture2D> normalTexture(new magnet::GL::Texture2DMultisampled(_samples));
     normalTexture->init(_camera.getWidth(), _camera.getHeight(), GL_RGBA16F_ARB);
     
-    std::tr1::shared_ptr<magnet::GL::Texture2D> posTexture(new magnet::GL::Texture2DMultisampled(_samples));
+    std::shared_ptr<magnet::GL::Texture2D> posTexture(new magnet::GL::Texture2DMultisampled(_samples));
     posTexture->init(_camera.getWidth(), _camera.getHeight(), GL_RGBA16F_ARB);
     
-    std::tr1::shared_ptr<magnet::GL::Texture2D> depthTexture(new magnet::GL::Texture2DMultisampled(_samples));
+    std::shared_ptr<magnet::GL::Texture2D> depthTexture(new magnet::GL::Texture2DMultisampled(_samples));
     depthTexture->init(_camera.getWidth(), _camera.getHeight(), GL_DEPTH_COMPONENT);    
 
     _Gbuffer.deinit();
@@ -2433,7 +2399,7 @@ namespace coil {
   void 
   CLGLWindow::autoscaleView()
   {
-    _glContext->queueTask(magnet::function::Task::makeTask(&CLGLWindow::rescaleCameraCallback, this));
+    _glContext->queueTask(std::bind(&CLGLWindow::rescaleCameraCallback, this));
   }
 
   void 
@@ -2442,12 +2408,10 @@ namespace coil {
     magnet::math::Vector min(HUGE_VAL,HUGE_VAL,HUGE_VAL);
     magnet::math::Vector max(-HUGE_VAL, -HUGE_VAL, -HUGE_VAL);
 
-    for (std::vector<std::tr1::shared_ptr<RenderObj> >::iterator iPtr 
-	   = _renderObjsTree._renderObjects.begin();
-	 iPtr != _renderObjsTree._renderObjects.end(); ++iPtr)
+    for (auto& obj : _renderObjsTree._renderObjects)
       {
-	magnet::math::Vector child_max = (*iPtr)->getMaxCoord();
-	magnet::math::Vector child_min = (*iPtr)->getMinCoord();
+	magnet::math::Vector child_max = obj->getMaxCoord();
+	magnet::math::Vector child_min = obj->getMinCoord();
 	
 	for (size_t i(0); i < 3; ++i) {
 	  min[i] = std::min(min[i], child_min[i]);
@@ -2484,12 +2448,10 @@ namespace coil {
     }
 	
     //Shift the lighting for the scene
-    for (std::vector<std::tr1::shared_ptr<RenderObj> >::iterator iPtr 
-	   = _renderObjsTree._renderObjects.begin();
-	 iPtr != _renderObjsTree._renderObjects.end(); ++iPtr)
+    for (auto& obj : _renderObjsTree._renderObjects)
       {
-	std::tr1::shared_ptr<RLight> ptr 
-	  = std::tr1::dynamic_pointer_cast<RLight>(*iPtr);
+	std::shared_ptr<RLight> ptr 
+	  = std::dynamic_pointer_cast<RLight>(obj);
 	if (ptr)
 	  {
 	    ptr->setSize(ptr->getSize() * oldScale / newScale);

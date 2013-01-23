@@ -20,12 +20,22 @@
 #include <dynamo/particle.hpp>
 #include <dynamo/interactions/interaction.hpp>
 #include <magnet/exception.hpp>
-#include <boost/functional/hash.hpp>
-#include <tr1/unordered_set>
-#include <tr1/unordered_map>
+#include <unordered_set>
+#include <unordered_map>
 #include <vector>
 
 namespace dynamo {
+  namespace detail {
+    struct Capture_hash {
+      std::size_t operator()(const std::pair<std::size_t, std::size_t>& key) const {
+	//Standard boost hash combining
+	std::size_t hash1 = std::hash<std::size_t>()(key.first);
+	std::size_t hash2 = std::hash<std::size_t>()(key.second);
+	return hash1 +  0x9e3779b9 + (hash2<<6) + (hash2>>2);
+      }
+    };
+  }
+
   /*! \brief A general interface for \ref Interaction classes with
      states for the particle pairs.
    
@@ -114,11 +124,11 @@ namespace dynamo {
 
     virtual size_t validateState(bool textoutput = true, size_t max_reports = std::numeric_limits<size_t>::max()) const;
 
-    const std::tr1::unordered_set<cMapKey, boost::hash<cMapKey> >& getMap() const { return captureMap; }
+    const std::unordered_set<cMapKey, detail::Capture_hash>& getMap() const { return captureMap; }
     
   protected:
 
-    mutable std::tr1::unordered_set<cMapKey, boost::hash<cMapKey> > captureMap;
+    mutable std::unordered_set<cMapKey, detail::Capture_hash> captureMap;
 
     /*! \brief Test if two particles should be "captured".
     
@@ -169,8 +179,8 @@ namespace dynamo {
 
   };
 
-  /*! \brief This base class is for Interaction classes which "capture"
-   * particle pairs in multiple states.
+  /*! \brief This base class is for Interaction classes which
+    "capture" particle pairs in multiple states.
    */
   class IMultiCapture: public ICapture
   {
@@ -190,7 +200,7 @@ namespace dynamo {
 
   protected:
   
-    typedef std::tr1::unordered_map<cMapKey, int, boost::hash<cMapKey> > captureMapType;
+    typedef std::unordered_map<cMapKey, int, detail::Capture_hash> captureMapType;
     typedef captureMapType::iterator cmap_it;
     typedef captureMapType::const_iterator const_cmap_it;
 

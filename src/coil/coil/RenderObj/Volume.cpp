@@ -43,7 +43,7 @@ namespace coil {
   }
 
   void 
-  RVolume::init(const std::tr1::shared_ptr<magnet::thread::TaskQueue>& systemQueue)
+  RVolume::init(const std::shared_ptr<magnet::thread::TaskQueue>& systemQueue)
   {
     RenderObj::init(systemQueue);
     _shader.defines("LIGHT_COUNT") = 1;
@@ -62,7 +62,7 @@ namespace coil {
 
     //Resize the copy FBO
     //Build depth buffer
-    std::tr1::shared_ptr<magnet::GL::Texture2D> depthTexture(new magnet::GL::Texture2D);
+    std::shared_ptr<magnet::GL::Texture2D> depthTexture(new magnet::GL::Texture2D);
     depthTexture->init(800, 600, GL_DEPTH_COMPONENT);
     depthTexture->parameter(GL_TEXTURE_MIN_FILTER, GL_NEAREST);
     depthTexture->parameter(GL_TEXTURE_MAG_FILTER, GL_NEAREST);
@@ -79,14 +79,12 @@ namespace coil {
   RVolume::loadRawFile(std::string filename, size_t width, size_t height, 
 		       size_t depth, size_t bytes)
   {
-    std::tr1::array<size_t, 3> dim = {{width, height, depth}};
-    _currentDepthFBO.getContext().queueTask(magnet::function::Task::makeTask
-					    (&RVolume::loadRawFileWorker, this, 
-					     filename, dim, bytes));
+    std::array<size_t, 3> dim = {{width, height, depth}};
+    _currentDepthFBO.getContext().queueTask(std::bind(&RVolume::loadRawFileWorker, this, filename, dim, bytes));
   }
 
   void 
-  RVolume::loadRawFileWorker(std::string filename, std::tr1::array<size_t,3> dim, 
+  RVolume::loadRawFileWorker(std::string filename, std::array<size_t,3> dim, 
 			     size_t bytes)
   {
     std::ifstream file(filename.c_str(), std::ifstream::binary);
@@ -217,7 +215,7 @@ namespace coil {
   void 
   RVolume::forwardRender(magnet::GL::FBO& fbo,
 			 const magnet::GL::Camera& camera,
-			 std::vector<std::tr1::shared_ptr<RLight> >& lights,
+			 std::vector<std::shared_ptr<RLight> >& lights,
 			 GLfloat ambient,
 			 RenderMode mode)
   {
@@ -231,7 +229,7 @@ namespace coil {
 	|| (fbo.getHeight() != _currentDepthFBO.getHeight()))
       {
 	_currentDepthFBO.deinit();
-	std::tr1::shared_ptr<magnet::GL::Texture2D> 
+	std::shared_ptr<magnet::GL::Texture2D> 
 	  depthTexture(new magnet::GL::Texture2D);
 	depthTexture->init(fbo.getWidth(), fbo.getHeight(), GL_DEPTH_COMPONENT);
 	depthTexture->parameter(GL_TEXTURE_MIN_FILTER, GL_NEAREST);
@@ -266,7 +264,7 @@ namespace coil {
     std::vector<Vector> light_positions;
     std::vector<Vector> light_color;
     std::vector<Vector> light_factors;
-    for (std::vector<std::tr1::shared_ptr<RLight> >::const_iterator 
+    for (std::vector<std::shared_ptr<RLight> >::const_iterator 
 	   iPtr = lights.begin(); iPtr != lights.end(); ++iPtr)
       {
 	light_positions.push_back((*iPtr)->getEyespacePosition(camera));
@@ -345,9 +343,7 @@ namespace coil {
     _optList.reset(new Gtk::VBox);//The Vbox of options   
 
     {//Transfer function widget
-      _transferFunction.reset(new magnet::gtk::TransferFunction
-			      (magnet::function::MakeDelegate
-			       (this, &RVolume::transferFunctionUpdated)));
+      _transferFunction.reset(new magnet::gtk::TransferFunction(magnet::Delegate<void()>::create<RVolume, &RVolume::transferFunctionUpdated>(this)));
       _transferFunction->set_size_request(-1, 100);
       
       _optList->add(*_transferFunction); _transferFunction->show();

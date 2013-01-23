@@ -65,6 +65,7 @@ variant valgrind : <inlining>on <optimization>speed <debug-symbols>on <profiling
 project	: requirements
           <threading>multi
 	  <variant>release:<define>NDEBUG
+	  <cflags>-std=c++0x
 	  #<cflags>-ansi <cflags>-pedantic
 	: default-build release
 	: build-dir $(BUILD_DIR_PATH)

@@ -191,11 +191,11 @@ namespace dynamo {
       case CORE:
 	{
 	  PairEventData retVal(Sim->dynamics->SmoothSpheresColl(iEvent, e, d2, CORE));
-	  Sim->signalParticleUpdate(retVal);
+	  (*Sim->_sigParticleUpdate)(retVal);
 	
 	  Sim->ptrScheduler->fullUpdate(p1, p2);
 	
-	  BOOST_FOREACH(shared_ptr<OutputPlugin> & Ptr, Sim->outputPlugins)
+	  for (shared_ptr<OutputPlugin> & Ptr : Sim->outputPlugins)
 	    Ptr->eventUpdate(iEvent, retVal);
 
 	  break;
@@ -208,9 +208,9 @@ namespace dynamo {
 	    addToCaptureMap(p1, p2);      
 	
 	  Sim->ptrScheduler->fullUpdate(p1, p2);
-	  Sim->signalParticleUpdate(retVal);
+	  (*Sim->_sigParticleUpdate)(retVal);
 	
-	  BOOST_FOREACH(shared_ptr<OutputPlugin> & Ptr, Sim->outputPlugins)
+	  for (shared_ptr<OutputPlugin> & Ptr : Sim->outputPlugins)
 	    Ptr->eventUpdate(iEvent, retVal);
 
 
@@ -223,11 +223,11 @@ namespace dynamo {
 	  if (retVal.getType() != BOUNCE)
 	    removeFromCaptureMap(p1, p2);      
 
-	  Sim->signalParticleUpdate(retVal);
+	  (*Sim->_sigParticleUpdate)(retVal);
 
 	  Sim->ptrScheduler->fullUpdate(p1, p2);
 	
-	  BOOST_FOREACH(shared_ptr<OutputPlugin> & Ptr, Sim->outputPlugins)
+	  for (shared_ptr<OutputPlugin> & Ptr : Sim->outputPlugins)
 	    Ptr->eventUpdate(iEvent, retVal);
 	  break;
 	}
@@ -296,7 +296,7 @@ namespace dynamo {
 	<< magnet::xml::attr("Lambda") << _lambda->getName()
 	<< magnet::xml::attr("WellDepth") << _wellDepth->getName()
 	<< magnet::xml::attr("Name") << intName
-	<< *range;
+	<< range;
   
     ISingleCapture::outputCaptureMap(XML);  
   }
@@ -308,7 +308,7 @@ namespace dynamo {
     double Energy = 0.0;
     typedef std::pair<size_t, size_t> locpair;
 
-    BOOST_FOREACH(const locpair& IDs, captureMap)
+    for (const locpair& IDs : captureMap)
       Energy += 0.5 * (_wellDepth->getProperty(IDs.first)
 		       +_wellDepth->getProperty(IDs.second));
   
